@@ -1,0 +1,60 @@
+#include "typedef.h"
+
+#define BUTTON_PIN       GPIO_PIN_13
+#define BUTTON_GPIO_PORT GPIOC
+#define BUTTON_NUMBER    1
+
+uint8_t button_read(void);
+static void button_scan(void);
+void button_released_callback(uint8_t button_number);
+void button_pressed_callback(uint8_t button_number);
+
+static uint32_t last_scan_time = 0;
+static uint8_t button_state = 0;
+	
+int main() {
+    // Configure button pin as input
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Pin = BUTTON_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(BUTTON_GPIO_PORT, &GPIO_InitStruct);
+	
+	while (1) 
+		{
+        button_scan();
+    }
+}
+
+uint8_t button_read(void) {
+    return HAL_GPIO_ReadPin(BUTTON_GPIO_PORT, BUTTON_PIN);
+}
+
+//two callback for button press and release events:
+void button_released_callback(uint8_t button_number) 
+	{
+    --button_number;
+  }
+
+void button_pressed_callback(uint8_t button_number) 
+	{
+    ++button_number;
+  }
+	
+//scan the button function:
+void button_scan(void) {
+    if (HAL_GetTick() - last_scan_time > 50) {
+        last_scan_time = HAL_GetTick();
+        uint8_t new_state = button_read();
+        if (new_state != button_state) {
+            button_state = new_state;
+            if (button_state == 0) {
+                // Button is pressed
+                button_pressed_callback(BUTTON_NUMBER);
+            } else {
+                // Button is released
+                button_released_callback(BUTTON_NUMBER);
+            }
+        }
+    }
+}
